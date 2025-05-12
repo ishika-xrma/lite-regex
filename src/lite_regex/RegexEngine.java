@@ -1,5 +1,6 @@
 package lite_regex;
 import java.util.List;
+import java.util.Scanner;
 public class RegexEngine {
     private final NFA nfa;
     
@@ -20,13 +21,31 @@ public class RegexEngine {
     }
     
     public static void main(String[] args) {
-        // Simple test
-        RegexEngine engine = new RegexEngine("a(b|c)*");
-        
-        System.out.println("a matches: " + engine.matches("a"));
-        System.out.println("ab matches: " + engine.matches("ab"));
-        System.out.println("abc matches: " + engine.matches("abc"));
-        System.out.println("abcbc matches: " + engine.matches("abcbc"));
-        System.out.println("d doesn't match: " + !engine.matches("d"));
+    	Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter regex pattern: ");
+        String pattern = scanner.nextLine();
+
+        RegexEngine engine = new RegexEngine(pattern);
+
+        while (true) {
+            System.out.print("Enter text to test (or type 'exit' to quit): ");
+            String input = scanner.nextLine();
+
+            if ("exit".equalsIgnoreCase(input)) {
+                break;
+            }
+
+            boolean result = engine.matches(input);
+            
+            if(result) {
+            	System.out.println("'" + input + "' matches pattern '" + pattern + "': " + result);
+            }
+            else {
+            	System.out.println("'" + input + "' doesn't match'" + pattern + "': " + result);
+            }
+        }
+
+        scanner.close();
     }
 }
