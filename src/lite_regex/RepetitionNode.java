@@ -11,4 +11,10 @@ public class RepetitionNode extends RegexNode {
 
     public RegexNode getChild() { return child; }
     public char getOperator() { return operator; }
+    
+    @Override
+    public String toString() {
+        return "Repetition(" + child + ", '" + operator + "')";
+    }
+    
 }

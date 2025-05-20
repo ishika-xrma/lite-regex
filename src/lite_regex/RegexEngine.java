@@ -7,9 +7,15 @@ public class RegexEngine {
     public RegexEngine(String pattern) {
         lexer lexer = new lexer(pattern);
         List<RegexToken> tokens = lexer.tokenize();
+        for(RegexToken token : tokens) {
+        	System.out.println(token);
+        }
         
         parser parser = new parser(tokens);
         RegexNode ast = parser.parse();
+        
+        System.out.println("\nParsed AST:");
+        System.out.println(ast);
         
         NFABuilder builder = new NFABuilder();
         this.nfa = builder.build(ast);

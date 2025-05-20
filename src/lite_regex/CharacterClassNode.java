@@ -16,4 +16,17 @@ class CharacterClassNode extends RegexNode {
     public boolean isNegated() {
         return negated;
     }
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("CharClass(");
+        if (negated) {
+            sb.append("^");
+        }
+        for (char c : characters) {
+            sb.append(c);
+        }
+        sb.append(")");
+        return sb.toString();
+    }
 }

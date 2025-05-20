@@ -48,7 +48,7 @@ public class RegexGUI {
                 String pattern = patternText.getText();
                 String input = inputText.getText();
                 RegexEngine engine = new RegexEngine(pattern);
-                
+               
                 boolean matches = engine.matches(input);
                 resultLabel.setText("Match: " + matches);
             }

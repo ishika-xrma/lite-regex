@@ -10,4 +10,8 @@ public class CharacterNode extends RegexNode {
     public char getCharacter() {
         return character;
     }
+    @Override
+    public String toString() {
+        return "Literal('" + character + "')";
+    }
 }

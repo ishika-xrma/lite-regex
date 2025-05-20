@@ -11,4 +11,8 @@ public class AlternationNode extends RegexNode {
 
     public RegexNode getLeft() { return left; }
     public RegexNode getRight() { return right; }
+    @Override
+    public String toString() {
+        return "Alt(" + left + " | " + right + ")";
+    }
 }

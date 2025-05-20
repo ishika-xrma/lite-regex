@@ -11,4 +11,8 @@ public class ConcatenationNode extends RegexNode {
 
     public RegexNode getLeft() { return left; }
     public RegexNode getRight() { return right; }
+    @Override
+    public String toString() {
+        return "Concat(" + left + ", " + right + ")";
+    }
 }
