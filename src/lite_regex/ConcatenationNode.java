@@ -1,0 +1,14 @@
+package lite_regex;
+
+public class ConcatenationNode extends RegexNode {
+    private final RegexNode left;
+    private final RegexNode right;
+
+    public ConcatenationNode(RegexNode left, RegexNode right) {
+        this.left = left;
+        this.right = right;
+    }
+
+    public RegexNode getLeft() { return left; }
+    public RegexNode getRight() { return right; }
+}
