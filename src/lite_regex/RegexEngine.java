@@ -15,7 +15,8 @@ public class RegexEngine {
         RegexNode ast = parser.parse();
         
         System.out.println("\nParsed AST:");
-        System.out.println(ast);
+        System.out.println(	);
+        
         
         NFABuilder builder = new NFABuilder();
         this.nfa = builder.build(ast);
