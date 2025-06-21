@@ -14,58 +14,102 @@ public class lexer {
     
     public List<RegexToken> tokenize() {
         List<RegexToken> tokens = new ArrayList<>();
+        boolean inCharacterClass = false;
         
         while (position < pattern.length()) {
-            char c = pattern.charAt(position++);
+            char c = pattern.charAt(position);
+            int currentPos = position;
             
-            switch (c) {
-                case '.':
-                    tokens.add(new RegexToken(RegexToken.TokenType.DOT, c));
-                    break;
-                case '*':
-                    tokens.add(new RegexToken(RegexToken.TokenType.STAR, c));
-                    break;
-                case '+':
-                    tokens.add(new RegexToken(RegexToken.TokenType.PLUS, c));
-                    break;
-                case '?':
-                    tokens.add(new RegexToken(RegexToken.TokenType.QUESTION, c));
-                    break;
-                case '(':
-                    tokens.add(new RegexToken(RegexToken.TokenType.LPAREN, c));
-                    break;
-                case ')':
-                    tokens.add(new RegexToken(RegexToken.TokenType.RPAREN, c));
-                    break;
-                case '|':
-                    tokens.add(new RegexToken(RegexToken.TokenType.ALTERNATION, c));
-                    break;
-                case '[':
-                    tokens.add(new RegexToken(RegexToken.TokenType.LBRACKET, c));
-                    break;
-                case ']':
-                    tokens.add(new RegexToken(RegexToken.TokenType.RBRACKET, c));
-                    break;
-                case '^':
-                    tokens.add(new RegexToken(RegexToken.TokenType.CARET, c));
-                    break;
-                case '$':
-                    tokens.add(new RegexToken(RegexToken.TokenType.DOLLAR, c));
-                    break;
-                case '\\':
-                    if (position < pattern.length()) {
-                        // Handle escape sequences
-                        c = pattern.charAt(position++);
-                        tokens.add(new RegexToken(RegexToken.TokenType.ESCAPE, c));
-                    } else {
-                        throw new IllegalArgumentException("Invalid escape sequence at end of pattern");
-                    }
-                    break;
-                default:
-                    tokens.add(new RegexToken(RegexToken.TokenType.CHARACTER, c));
+            try {
+                if (inCharacterClass && c == ']') {
+                    tokens.add(new RegexToken(RegexToken.TokenType.RBRACKET, c, currentPos));
+                    position++;
+                    inCharacterClass = false;
+                    continue;
+                }
+                
+                switch (c) {
+                    case '\\':
+                        handleEscapeSequence(tokens, currentPos);
+                        break;
+                    case '[':
+                        tokens.add(new RegexToken(RegexToken.TokenType.LBRACKET, c, currentPos));
+                        position++;
+                        inCharacterClass = true;
+                        break;
+                    case '.':
+                        tokens.add(new RegexToken(RegexToken.TokenType.DOT, c, currentPos));
+                        position++;
+                        break;
+                    case '*':
+                        tokens.add(new RegexToken(RegexToken.TokenType.STAR, c, currentPos));
+                        position++;
+                        break;
+                    case '+':
+                        tokens.add(new RegexToken(RegexToken.TokenType.PLUS, c, currentPos));
+                        position++;
+                        break;
+                    case '?':
+                        tokens.add(new RegexToken(RegexToken.TokenType.QUESTION, c, currentPos));
+                        position++;
+                        break;
+                    case '(':
+                        tokens.add(new RegexToken(RegexToken.TokenType.LPAREN, c, currentPos));
+                        position++;
+                        break;
+                    case ')':
+                        tokens.add(new RegexToken(RegexToken.TokenType.RPAREN, c, currentPos));
+                        position++;
+                        break;
+                    case '|':
+                        tokens.add(new RegexToken(RegexToken.TokenType.ALTERNATION, c, currentPos));
+                        position++;
+                        break;
+                    case '^':
+                        tokens.add(new RegexToken(RegexToken.TokenType.CARET, c, currentPos));
+                        position++;
+                        break;
+                    case '$':
+                        tokens.add(new RegexToken(RegexToken.TokenType.DOLLAR, c, currentPos));
+                        position++;
+                        break;
+                    case '-':
+                        tokens.add(new RegexToken(RegexToken.TokenType.DASH, c, currentPos));
+                        position++;
+                        break;
+                    default:
+                        tokens.add(new RegexToken(RegexToken.TokenType.CHARACTER, c, currentPos));
+                        position++;
+                }
+            } catch (RegexException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RegexException("Unexpected error while parsing regex", 
+                                      currentPos, pattern, 
+                                      "Character '" + c + "' caused an error: " + e.getMessage());
             }
         }
         
         return tokens;
+    }
+
+    private void handleEscapeSequence(List<RegexToken> tokens, int pos) {
+        if (position + 1 >= pattern.length()) {
+            throw new RegexException("Invalid escape sequence at end of pattern", 
+                                  pos, pattern, 
+                                  "Escape character '\\' must be followed by another character");
+        }
+        char escapedChar = pattern.charAt(position + 1);
+        position += 2;
+        switch (escapedChar) {
+            case 'w':
+                tokens.add(new RegexToken(RegexToken.TokenType.WORD, 'w', pos));
+                break;
+            case 'd':
+                tokens.add(new RegexToken(RegexToken.TokenType.DIGIT, 'd', pos));
+                break;
+            default:
+                tokens.add(new RegexToken(RegexToken.TokenType.ESCAPE, escapedChar, pos));
+        }
     }
 }

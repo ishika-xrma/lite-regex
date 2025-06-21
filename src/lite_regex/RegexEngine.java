@@ -1,25 +1,29 @@
 package lite_regex;
 import java.util.List;
 import java.util.Scanner;
+
 public class RegexEngine {
     private final NFA nfa;
+    private final String pattern;
     
     public RegexEngine(String pattern) {
-        lexer lexer = new lexer(pattern);
-        List<RegexToken> tokens = lexer.tokenize();
-        for(RegexToken token : tokens) {
-        	System.out.println(token);
+        this.pattern = pattern;
+        try {
+            lexer lexer = new lexer(pattern);
+            List<RegexToken> tokens = lexer.tokenize();
+            
+            parser parser = new parser(tokens, pattern);
+            RegexNode ast = parser.parse();
+            
+            NFABuilder builder = new NFABuilder();
+            this.nfa = builder.build(ast);
+        } catch (RegexException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RegexException("Failed to compile regex pattern", 
+                                   0, pattern, 
+                                   "Unexpected error: " + e.getMessage());
         }
-        
-        parser parser = new parser(tokens);
-        RegexNode ast = parser.parse();
-        
-        System.out.println("\nParsed AST:");
-        System.out.println(	);
-        
-        
-        NFABuilder builder = new NFABuilder();
-        this.nfa = builder.build(ast);
     }
     
     public boolean matches(String text) {
@@ -28,31 +32,30 @@ public class RegexEngine {
     }
     
     public static void main(String[] args) {
-    	Scanner scanner = new Scanner(System.in);
-
+        Scanner scanner = new Scanner(System.in);
         System.out.print("Enter regex pattern: ");
         String pattern = scanner.nextLine();
 
-        RegexEngine engine = new RegexEngine(pattern);
+        try {
+            RegexEngine engine = new RegexEngine(pattern);
+            System.out.println("Pattern compiled successfully!");
 
-        while (true) {
-            System.out.print("Enter text to test (or type 'exit' to quit): ");
-            String input = scanner.nextLine();
+            while (true) {
+                System.out.print("Enter text to test (or type 'exit' to quit): ");
+                String input = scanner.nextLine();
 
-            if ("exit".equalsIgnoreCase(input)) {
-                break;
-            }
+                if ("exit".equalsIgnoreCase(input)) {
+                    break;
+                }
 
-            boolean result = engine.matches(input);
-            
-            if(result) {
-            	System.out.println("'" + input + "' matches pattern '" + pattern + "': " + result);
+                boolean result = engine.matches(input);
+                System.out.println("'" + input + "' " + (result ? "matches" : "does not match") + 
+                                  " pattern '" + pattern + "'");
             }
-            else {
-            	System.out.println("'" + input + "' doesn't match'" + pattern + "': " + result);
-            }
+        } catch (RegexException e) {
+            System.err.println(e.getMessage());
+        } finally {
+            scanner.close();
         }
-
-        scanner.close();
     }
 }

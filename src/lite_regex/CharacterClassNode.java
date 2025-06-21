@@ -1,6 +1,7 @@
 package lite_regex;
 import java.util.*;
-class CharacterClassNode extends RegexNode {
+
+public class CharacterClassNode extends RegexNode {
     private final Set<Character> characters;
     private final boolean negated;
     
@@ -16,17 +17,18 @@ class CharacterClassNode extends RegexNode {
     public boolean isNegated() {
         return negated;
     }
+    
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("CharClass(");
+        sb.append("CharClass[");
         if (negated) {
             sb.append("^");
         }
         for (char c : characters) {
             sb.append(c);
         }
-        sb.append(")");
+        sb.append("]");
         return sb.toString();
     }
 }
