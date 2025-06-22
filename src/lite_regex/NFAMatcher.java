@@ -35,6 +35,7 @@ public class NFAMatcher {
         return computeEpsilonClosure(nextStates);
     }
     
+    
     private Set<State> computeEpsilonClosure(Set<State> states) {
         Set<State> closure = new HashSet<>(states);
         Stack<State> stack = new Stack<>();

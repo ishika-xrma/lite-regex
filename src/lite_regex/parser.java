@@ -110,50 +110,56 @@ public class parser {
             case CHARACTER:
                 return new CharacterNode(token.getValue());
             case DOT:
+                // Check if this dot was escaped
+                if (position > 1 && tokens.get(position-2).getType() == RegexToken.TokenType.ESCAPE) {
+                    return new CharacterNode('.');
+                }
                 return new AnyCharNode();
             case LPAREN:
                 RegexNode expr = parseExpression();
                 if (position >= tokens.size() || tokens.get(position).getType() != RegexToken.TokenType.RPAREN) {
                     throwParseError("Missing closing parenthesis", 
-                                  "No matching ')' for opening '(' at position " + token.getPosition());
+                                  "No matching ')' for opening '(' at position " + (position-1));
                 }
                 position++;
                 return expr;
             case LBRACKET:
                 return parseCharacterClass();
             case ESCAPE:
-                return new CharacterNode(token.getValue());
+                // Handle the escaped character (next token)
+                if (position >= tokens.size()) {
+                    throwParseError("Invalid escape sequence", 
+                                  "Escape character '\\' at end of pattern");
+                }
+                RegexToken nextToken = tokens.get(position);
+                position++;
+                return new CharacterNode(nextToken.getValue());
             default:
                 throwParseError("Unexpected token: " + token.getType(), 
                               "Token '" + token.getValue() + "' is not valid in this position");
         }
-        return null;
+        // This line should never be reached because the default case throws an exception
+        throw new AssertionError("Unreachable code");
     }
-
     private RegexNode parseCharacterClass() {
         boolean negated = false;
         Set<Character> characters = new HashSet<>();
         int classStartPos = position - 1; // Position of the '['
 
+        // Check for negation
         if (position < tokens.size() && tokens.get(position).getType() == RegexToken.TokenType.CARET) {
             negated = true;
             position++;
         }
 
-        if (position >= tokens.size()) {
-            throwParseError("Unclosed character class", 
-                          "Character class starting at position " + classStartPos + " is not closed");
-        }
-
         while (position < tokens.size() && tokens.get(position).getType() != RegexToken.TokenType.RBRACKET) {
             RegexToken current = tokens.get(position);
             
+            // Handle character ranges (e.g., a-z)
             if (position + 2 < tokens.size() && 
                 tokens.get(position + 1).getType() == RegexToken.TokenType.DASH) {
-                // Handle range (e.g., a-z)
                 char start = current.getValue();
                 char end = tokens.get(position + 2).getValue();
-                position += 3;
                 
                 if (start > end) {
                     throwParseError("Invalid character range", 
@@ -163,7 +169,9 @@ public class parser {
                 for (char c = start; c <= end; c++) {
                     characters.add(c);
                 }
+                position += 3;
             } else {
+                // Single character
                 characters.add(current.getValue());
                 position++;
             }
@@ -174,11 +182,6 @@ public class parser {
                           "Character class starting at position " + classStartPos + " is not closed");
         }
         position++;
-        
-        if (characters.isEmpty()) {
-            throwParseError("Empty character class", 
-                          "Character class must contain at least one character");
-        }
         
         return new CharacterClassNode(characters, negated);
     }

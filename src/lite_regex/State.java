@@ -32,6 +32,10 @@ public class State {
         return transitions.getOrDefault(symbol, Collections.emptySet());
     }
     
+    public Map<Character, Set<State>> getTransitions() {
+        return Collections.unmodifiableMap(transitions);
+    }
+    
     public Set<State> getEpsilonTransitions() {
         return epsilonTransitions;
     }

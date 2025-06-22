@@ -18,7 +18,25 @@ public class NFABuilder {
             } else if (node instanceof RepetitionNode) {
                 return buildRepetitionNode((RepetitionNode) node);
             } else if (node instanceof CharacterClassNode) {
-                return buildCharacterClassNode((CharacterClassNode) node);
+                CharacterClassNode ccNode = (CharacterClassNode) node;
+                State start = new State();
+                State accept = new State();
+                
+                if (ccNode.isNegated()) {
+                    // Match any character NOT in the set
+                    for (char c = 32; c < 127; c++) { // ASCII printable range
+                        if (!ccNode.getCharacters().contains(c)) {
+                            start.addTransition(c, accept);
+                        }
+                    }
+                } else {
+                    // Match any character in the set
+                    for (char c : ccNode.getCharacters()) {
+                        start.addTransition(c, accept);
+                    }
+                }
+                
+                return new NFA(start, accept);
             } else {
                 throw new IllegalArgumentException("Unsupported regex node type: " + 
                     (node != null ? node.getClass().getName() : "null"));
