@@ -12,6 +12,7 @@ Features
 - ✅ Length analysis optimizations
 - ✅ Pattern explanation system
 - ✅ Both CLI and GUI interfaces
+  
 Performance Characteristics
   - Faster pattern compilation than DFA-based engines
   - Slower matching for complex patterns (tradeoff for simpler implementation)
