@@ -81,18 +81,73 @@ public class parser {
 
     private RegexNode parseFactor() {
         RegexNode base = parseBase();
+        
         if (position < tokens.size()) {
             RegexToken token = tokens.get(position);
+            
+            // Handle *, +, ? quantifiers
             if (token.getType() == RegexToken.TokenType.STAR ||
                 token.getType() == RegexToken.TokenType.PLUS ||
                 token.getType() == RegexToken.TokenType.QUESTION) {
                 position++;
                 return new RepetitionNode(base, token.getValue());
             }
+            // Handle {n,m} quantifiers
+            else if (token.getType() == RegexToken.TokenType.LBRACE) {
+                return parseQuantifier(base);
+            }
         }
         return base;
     }
 
+    private RegexNode parseQuantifier(RegexNode child) {
+        position++; // skip {
+        
+        int min = parseNumber();
+        Integer max = null;
+        
+        if (position < tokens.size() && tokens.get(position).getType() == RegexToken.TokenType.COMMA) {
+            position++; // skip ,
+            if (position < tokens.size() && tokens.get(position).getType() != RegexToken.TokenType.RBRACE) {
+                max = parseNumber();
+            }
+        }
+        
+        if (position >= tokens.size() || tokens.get(position).getType() != RegexToken.TokenType.RBRACE) {
+            throwParseError("Unclosed quantifier", "Expected '}'");
+        }
+        position++; // skip }
+        
+        if (max != null && max < min) {
+            throwParseError("Invalid quantifier range", "Max must be >= min");
+        }
+        
+        return new QuantifierNode(child, min, max);
+    }
+
+    private int parseNumber() {
+        if (position >= tokens.size()) {
+            throwParseError("Expected number in quantifier", "Found end of pattern");
+        }
+
+        StringBuilder num = new StringBuilder();
+        while (position < tokens.size() &&
+               tokens.get(position).getType() == RegexToken.TokenType.NUMBER) {
+            num.append(tokens.get(position).getValue());
+            position++;
+        }
+
+        if (num.length() == 0) {
+            throwParseError("Expected number in quantifier", "No digits found");
+        }
+
+        try {
+            return Integer.parseInt(num.toString());
+        } catch (NumberFormatException e) {
+            throwParseError("Invalid number in quantifier", "Number too large");
+            return 0; // Unreachable
+        }
+    }
     private RegexNode parseBase() {
         if (position >= tokens.size()) {
             throwParseError("Unexpected end of pattern", 

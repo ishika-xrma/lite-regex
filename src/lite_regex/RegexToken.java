@@ -17,7 +17,11 @@ public class RegexToken {
         ESCAPE,         // \ (escape character)
         DASH,           // - (range in character class)
         WORD,          // \w
-        DIGIT          // \d
+        DIGIT,          // \d
+        LBRACE,    // {
+        RBRACE,    // }
+        COMMA,      // ,
+        NUMBER
     }
     
     private final TokenType type;

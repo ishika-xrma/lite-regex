@@ -17,26 +17,10 @@ public class NFABuilder {
                 return buildAlternationNode((AlternationNode) node);
             } else if (node instanceof RepetitionNode) {
                 return buildRepetitionNode((RepetitionNode) node);
+            } else if (node instanceof QuantifierNode) {
+                return buildQuantifierNode((QuantifierNode) node);
             } else if (node instanceof CharacterClassNode) {
-                CharacterClassNode ccNode = (CharacterClassNode) node;
-                State start = new State();
-                State accept = new State();
-                
-                if (ccNode.isNegated()) {
-                    // Match any character NOT in the set
-                    for (char c = 32; c < 127; c++) { // ASCII printable range
-                        if (!ccNode.getCharacters().contains(c)) {
-                            start.addTransition(c, accept);
-                        }
-                    }
-                } else {
-                    // Match any character in the set
-                    for (char c : ccNode.getCharacters()) {
-                        start.addTransition(c, accept);
-                    }
-                }
-                
-                return new NFA(start, accept);
+                return buildCharacterClassNode((CharacterClassNode) node);
             } else {
                 throw new IllegalArgumentException("Unsupported regex node type: " + 
                     (node != null ? node.getClass().getName() : "null"));
@@ -48,11 +32,79 @@ public class NFABuilder {
         }
     }
 
+    private NFA buildQuantifierNode(QuantifierNode node) {
+        if (node.getMax() != null && node.getMin() == node.getMax()) {
+            return buildExactCount(node);
+        }
+        return buildRangeQuantifier(node);
+    }
+
+    private NFA buildExactCount(QuantifierNode node) {
+        State start = new State();
+        State current = start;
+
+        for (int i = 0; i < node.getMin(); i++) {
+            NFA next = build(node.getChild());
+
+            // Remove old accepting state
+            next.getAcceptState().setAccepting(false);
+
+            current.addEpsilonTransition(next.getStartState());
+            current = next.getAcceptState();
+        }
+
+        State accept = new State();
+        accept.setAccepting(true);  // <== ONLY ONE accepting state
+        current.addEpsilonTransition(accept);
+
+        return new NFA(start, accept, node.getMin(), node.getMin());
+    }
+
+
+
+    private NFA buildRangeQuantifier(QuantifierNode node) {
+        State start = new State();
+        State current = start;
+
+        // Handle minimum repetitions (always required)
+        for (int i = 0; i < node.getMin(); i++) {
+            NFA next = build(node.getChild());
+            next.getAcceptState().setAccepting(false); // 🔥 Clear old accepting state
+            current.addEpsilonTransition(next.getStartState());
+            current = next.getAcceptState();
+        }
+
+        State accept = new State();  // ✅ The only final accepting state
+        accept.setAccepting(true);
+
+        // Handle optional repetitions up to max
+        if (node.getMax() != null) {
+            State optionalStart = current;
+            for (int i = node.getMin(); i < node.getMax(); i++) {
+                NFA optional = build(node.getChild());
+                optional.getAcceptState().setAccepting(false); // 🔥 Clear old accepting
+                optionalStart.addEpsilonTransition(optional.getStartState());
+                optionalStart.addEpsilonTransition(accept); // early exit path
+                optionalStart = optional.getAcceptState();
+            }
+            optionalStart.addEpsilonTransition(accept);
+        } else {
+            // Unlimited case {n,}
+            current.addEpsilonTransition(accept);
+            NFA loop = build(node.getChild());
+            loop.getAcceptState().setAccepting(false); // 🔥 Clear old accepting
+            current.addEpsilonTransition(loop.getStartState());
+        }
+
+        return new NFA(start, accept, node.getMin(), node.getMax());
+    }
+
+
     private NFA buildCharacterNode(CharacterNode node) {
         State start = new State();
         State accept = new State();
         start.addTransition(node.getCharacter(), accept);
-        return new NFA(start, accept);
+        return new NFA(start, accept, 1, 1);
     }
 
     private NFA buildAnyCharNode() {
@@ -61,7 +113,7 @@ public class NFABuilder {
         for (char c = 0; c < 128; c++) {
             start.addTransition(c, accept);
         }
-        return new NFA(start, accept);
+        return new NFA(start, accept, 1, 1);
     }
 
     private NFA buildWordCharNode() {
@@ -72,7 +124,7 @@ public class NFABuilder {
         for (char c = 'A'; c <= 'Z'; c++) start.addTransition(c, accept);
         for (char c = '0'; c <= '9'; c++) start.addTransition(c, accept);
         start.addTransition('_', accept);
-        return new NFA(start, accept);
+        return new NFA(start, accept, 1, 1);
     }
 
     private NFA buildDigitNode() {
@@ -81,7 +133,7 @@ public class NFABuilder {
         for (char c = '0'; c <= '9'; c++) {
             start.addTransition(c, accept);
         }
-        return new NFA(start, accept);
+        return new NFA(start, accept, 1, 1);
     }
 
     private NFA buildConcatenationNode(ConcatenationNode node) {
@@ -89,7 +141,14 @@ public class NFABuilder {
         NFA rightNFA = build(node.getRight());
         leftNFA.getAcceptState().addEpsilonTransition(rightNFA.getStartState());
         leftNFA.getAcceptState().setAccepting(false);
-        return new NFA(leftNFA.getStartState(), rightNFA.getAcceptState());
+        
+        // Calculate combined length constraints
+        int min = leftNFA.getMinLength() + rightNFA.getMinLength();
+        Integer max = null;
+        if (leftNFA.getMaxLength() != null && rightNFA.getMaxLength() != null) {
+            max = leftNFA.getMaxLength() + rightNFA.getMaxLength();
+        }
+        return new NFA(leftNFA.getStartState(), rightNFA.getAcceptState(), min, max);
     }
 
     private NFA buildAlternationNode(AlternationNode node) {
@@ -103,7 +162,14 @@ public class NFABuilder {
         rightNFA.getAcceptState().addEpsilonTransition(accept);
         leftNFA.getAcceptState().setAccepting(false);
         rightNFA.getAcceptState().setAccepting(false);
-        return new NFA(start, accept);
+        
+        // Calculate length constraints for alternation
+        int min = Math.min(leftNFA.getMinLength(), rightNFA.getMinLength());
+        Integer max = null;
+        if (leftNFA.getMaxLength() != null && rightNFA.getMaxLength() != null) {
+            max = Math.max(leftNFA.getMaxLength(), rightNFA.getMaxLength());
+        }
+        return new NFA(start, accept, min, max);
     }
 
     private NFA buildRepetitionNode(RepetitionNode node) {
@@ -114,20 +180,29 @@ public class NFABuilder {
         childNFA.getAcceptState().addEpsilonTransition(accept);
         childNFA.getAcceptState().setAccepting(false);
 
+        int min = 0;
+        Integer max = null;
+        
         switch (node.getOperator()) {
             case '*':
                 start.addEpsilonTransition(accept);
                 childNFA.getAcceptState().addEpsilonTransition(childNFA.getStartState());
+                min = 0;
+                max = null;
                 break;
             case '+':
                 childNFA.getAcceptState().addEpsilonTransition(childNFA.getStartState());
+                min = childNFA.getMinLength();
+                max = null;
                 break;
             case '?':
                 start.addEpsilonTransition(accept);
+                min = 0;
+                max = childNFA.getMaxLength();
                 break;
         }
         
-        return new NFA(start, accept);
+        return new NFA(start, accept, min, max);
     }
 
     private NFA buildCharacterClassNode(CharacterClassNode node) {
@@ -144,6 +219,6 @@ public class NFABuilder {
                 start.addTransition(c, accept);
             }
         }
-        return new NFA(start, accept);
+        return new NFA(start, accept, 1, 1);
     }
 }

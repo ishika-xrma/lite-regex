@@ -1,32 +1,46 @@
 package lite_regex;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class DFA {
-    private final Map<DFAState, Map<Character, DFAState>> transitionTable;
-    private final Set<DFAState> acceptingStates;
     private final DFAState startState;
+    private final Set<DFAState> acceptingStates;
+    private final Map<DFAState, Map<Character, DFAState>> transitionTable;
+    private final int minLength;
+    private final Integer maxLength;
 
-    public DFA(Map<DFAState, Map<Character, DFAState>> transitionTable, 
-               Set<DFAState> acceptingStates, 
-               DFAState startState) {
-        this.transitionTable = transitionTable;
-        this.acceptingStates = acceptingStates;
+    public DFA(DFAState startState, 
+              Set<DFAState> acceptingStates,
+              Map<DFAState, Map<Character, DFAState>> transitionTable,
+              int minLength, Integer maxLength) {
         this.startState = startState;
+        this.acceptingStates = acceptingStates;
+        this.transitionTable = transitionTable;
+        this.minLength = minLength;
+        this.maxLength = maxLength;
     }
 
     public boolean matches(String input) {
         DFAState current = startState;
-        for (int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
+
+        for (char c : input.toCharArray()) {
             Map<Character, DFAState> transitions = transitionTable.get(current);
             if (transitions == null || !transitions.containsKey(c)) {
-                return false;
+                return false;  // ❌ dead end
             }
             current = transitions.get(c);
         }
-        return acceptingStates.contains(current);
+
+        return acceptingStates.contains(current);  // ✅ Only final state must be accepting
+    }
+
+
+    public int getMinLength() {
+        return minLength;
+    }
+
+    public Integer getMaxLength() {
+        return maxLength;
     }
 }

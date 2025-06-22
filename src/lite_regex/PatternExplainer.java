@@ -19,37 +19,49 @@ class PatternExplainer {
  }
  
  private static String explainToken(RegexToken token, int index, List<RegexToken> tokens) {
-     switch (token.getType()) {
-         case CHARACTER:
-             return String.format("• Matches literal character '%c'\n", token.getValue());
-         case DOT:
-             return "• Matches any single character (except newline)\n";
-         case STAR:
-             return "• Matches zero or more of the preceding element\n";
-         case PLUS:
-             return "• Matches one or more of the preceding element\n";
-         case QUESTION:
-             return "• Matches zero or one of the preceding element (optional)\n";
-         case LPAREN:
-             return "• Starts a capturing group\n";
-         case RPAREN:
-             return "• Ends a capturing group\n";
-         case LBRACKET:
-             return "• Starts a character class (matches any one character from the set)\n";
-         case RBRACKET:
-             return "• Ends a character class\n";
-         case ALTERNATION:
-             return "• OR operator - matches either the pattern before or after\n";
-         case CARET:
-             return "• Matches start of string (or line in multiline mode)\n";
-         case DOLLAR:
-             return "• Matches end of string (or line in multiline mode)\n";
-         case WORD:
-             return "• Matches word characters (letters, digits, underscore)\n";
-         case DIGIT:
-             return "• Matches any digit (0-9)\n";
-         default:
-             return String.format("• Token: %s\n", token.getType());
-     }
- }
+	    switch (token.getType()) {
+	        case CHARACTER:
+	            return String.format("• Matches literal character '%c'\n", token.getValue());
+	        case DOT:
+	            return "• Matches any single character (except newline)\n";
+	        case STAR:
+	            return "• Matches zero or more of the preceding element\n";
+	        case PLUS:
+	            return "• Matches one or more of the preceding element\n";
+	        case QUESTION:
+	            return "• Matches zero or one of the preceding element (optional)\n";
+	        case LPAREN:
+	            return "• Starts a capturing group\n";
+	        case RPAREN:
+	            return "• Ends a capturing group\n";
+	        case LBRACKET:
+	            return "• Starts a character class (matches any one character from the set)\n";
+	        case RBRACKET:
+	            return "• Ends a character class\n";
+	        case ALTERNATION:
+	            return "• OR operator - matches either the pattern before or after\n";
+	        case CARET:
+	            return "• Matches start of string (or line in multiline mode)\n";
+	        case DOLLAR:
+	            return "• Matches end of string (or line in multiline mode)\n";
+	        case WORD:
+	            return "• Matches word characters (letters, digits, underscore)\n";
+	        case DIGIT:
+	            return "• Matches any digit (0-9)\n";
+	        case DASH:
+	            return "• Used for range in character class (e.g., a-z)\n";
+	        case LBRACE:
+	            return "• Starts a quantifier (e.g., {n}, {n,}, {n,m})\n";
+	        case RBRACE:
+	            return "• Ends the quantifier\n";
+	        case COMMA:
+	            return "• Separator in a range quantifier (e.g., {2,5})\n";
+	        case NUMBER:
+	            return String.format("• Number: %c (used in quantifier)\n", token.getValue());
+	        default:
+	            return String.format("• Token: %s\n", token.getType());
+	    }
+	}
+
+ 
 }

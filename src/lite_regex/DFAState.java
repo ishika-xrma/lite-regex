@@ -31,6 +31,6 @@ public class DFAState {
 
     @Override
     public String toString() {
-        return "DFAState-" + id + "(" + nfaStates + ")";
+        return "DFAState-" + id + nfaStates;
     }
 }

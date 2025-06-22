@@ -29,6 +29,18 @@ public class lexer {
                 }
                 
                 switch (c) {
+	                case '{':
+	                    tokens.add(new RegexToken(RegexToken.TokenType.LBRACE, c, currentPos));
+	                    position++;
+	                    break;
+	                case '}':
+	                    tokens.add(new RegexToken(RegexToken.TokenType.RBRACE, c, currentPos));
+	                    position++;
+	                    break;
+	                case ',':
+	                    tokens.add(new RegexToken(RegexToken.TokenType.COMMA, c, currentPos));
+	                    position++;
+	                    break;
                     case '\\':
                         handleEscapeSequence(tokens, currentPos);
                         break;
@@ -94,8 +106,13 @@ public class lexer {
                         position++;
                         break;
                     default:
-                        tokens.add(new RegexToken(RegexToken.TokenType.CHARACTER, c, currentPos));
+                        if (Character.isDigit(c)) {
+                            tokens.add(new RegexToken(RegexToken.TokenType.NUMBER, c, currentPos));
+                        } else {
+                            tokens.add(new RegexToken(RegexToken.TokenType.CHARACTER, c, currentPos));
+                        }
                         position++;
+
                 }
             } catch (RegexException e) {
                 throw e;
