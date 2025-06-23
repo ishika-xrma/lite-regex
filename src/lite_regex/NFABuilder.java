@@ -69,36 +69,46 @@ public class NFABuilder {
         // Handle minimum repetitions (always required)
         for (int i = 0; i < node.getMin(); i++) {
             NFA next = build(node.getChild());
-            next.getAcceptState().setAccepting(false); // 🔥 Clear old accepting state
+            next.getAcceptState().setAccepting(false);
             current.addEpsilonTransition(next.getStartState());
             current = next.getAcceptState();
         }
 
-        State accept = new State();  // ✅ The only final accepting state
+        State accept = new State();
         accept.setAccepting(true);
 
-        // Handle optional repetitions up to max
         if (node.getMax() != null) {
+            // Finite case {n,m}
             State optionalStart = current;
             for (int i = node.getMin(); i < node.getMax(); i++) {
                 NFA optional = build(node.getChild());
-                optional.getAcceptState().setAccepting(false); // 🔥 Clear old accepting
+                optional.getAcceptState().setAccepting(false);
                 optionalStart.addEpsilonTransition(optional.getStartState());
-                optionalStart.addEpsilonTransition(accept); // early exit path
+                optionalStart.addEpsilonTransition(accept); // Early exit path
                 optionalStart = optional.getAcceptState();
             }
             optionalStart.addEpsilonTransition(accept);
         } else {
             // Unlimited case {n,}
-            current.addEpsilonTransition(accept);
             NFA loop = build(node.getChild());
-            loop.getAcceptState().setAccepting(false); // 🔥 Clear old accepting
+            loop.getAcceptState().setAccepting(false);
+            
+            // Connect current state to both:
+            // 1. The accept state (to allow matching just the minimum)
+            current.addEpsilonTransition(accept);
+            
+            // 2. The loop start (to allow additional matches)
             current.addEpsilonTransition(loop.getStartState());
+            
+            // Connect the loop end back to itself to allow repeating
+            loop.getAcceptState().addEpsilonTransition(loop.getStartState());
+            
+            // Connect the loop end to the accept state
+            loop.getAcceptState().addEpsilonTransition(accept);
         }
 
         return new NFA(start, accept, node.getMin(), node.getMax());
     }
-
 
     private NFA buildCharacterNode(CharacterNode node) {
         State start = new State();
